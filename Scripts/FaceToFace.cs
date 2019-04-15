@@ -114,7 +114,9 @@ namespace FaceToFaceManager
 
 			animManager.SetFacial(currentFacialValues * 100);
 			lastFacialValues = currentFacialValues;
-            GetAngles(currentLandmarks);
+
+			if(currentLandmarks!=null)
+				GetAngles(currentLandmarks);
         }
 
         private void GetAngles(FaceLandmarks currentLandmarks)

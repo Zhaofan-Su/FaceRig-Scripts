@@ -24,16 +24,17 @@ public class FacePosture
     }
 
     // 当前的旋转角度
-    public Angles angles;
+    public Angles angles=new Angles();
 
     // 6 key points of the face
-    public List<Point2f> points = new List<Point2f>(6);
+    public List<Point2f> points = new List<Point2f>();
     // new points after reflecting
     public List<Point2f> new2Dpoints;
 
 
     public void updatePoints(FaceLandmarks landmarks)
     {
+		points.Clear();
         //points = now_points;
         //points = landmarks.points.ConvertAll(point => new Point2f(point.x, point.y));
         // Tipnose
@@ -62,41 +63,41 @@ public class FacePosture
         };
 
         var dist = new double[] { 0, 0, 0, 0, 0 };
-        var objPts = new[] { originalPoints };
-        var imgPts = new[] { this.points };
+		var objPts = originalPoints;//new[] { originalPoints };
+		var imgPts = points;//new[] { this.points };
         // store the 2D reflected points
         Mat resultPoints = new Mat();
 
-        //calculate the pose
-        using (var objPtsMat = new Mat(objPts.Length, 1, MatType.CV_32FC3, objPts))
-        using (var imgPtsMat = new Mat(imgPts.Length, 1, MatType.CV_32FC2, imgPts))
-        using (var cameraMatrixMat = Mat.Eye(3, 3, MatType.CV_64FC1))
-        using (var distMat = Mat.Zeros(5, 0, MatType.CV_64FC1))
-        using (var rvecMat = new Mat())
-        using (var tvecMat = new Mat())
-        {
-            // solve for pose
-            Cv2.SolvePnP(objPtsMat, imgPtsMat, cameraMatrixMat, distMat, rvecMat, tvecMat);
+		//calculate the pose
+		using (var objPtsMat = InputArray.Create<Point3f>(originalPoints, MatType.CV_32FC3))//new Mat(objPts.Count, 1, MatType.CV_32FC3, objPts))
+		using (var imgPtsMat = InputArray.Create<Point2f>(points, MatType.CV_32FC2))//new Mat(imgPts.Length, 1, MatType.CV_32FC2, imgPts))
+		using (var cameraMatrixMat = Mat.Eye(3, 3, MatType.CV_64FC1))
+		using (var distMat = Mat.Zeros(5, 0, MatType.CV_64FC1))
+		using (var rvecMat = new Mat())
+		using (var tvecMat = new Mat())
+		{
+			// solve for pose
+			Cv2.SolvePnP(objPtsMat, imgPtsMat, cameraMatrixMat, distMat, rvecMat, tvecMat);
 
-            // draw the 3D points to 2D image plane
-            Cv2.ProjectPoints(objPtsMat, rvecMat, tvecMat, cameraMatrixMat, distMat, resultPoints);
-            //Debug.Log(resultPoints);
+			// draw the 3D points to 2D image plane
+			Cv2.ProjectPoints(objPtsMat, rvecMat, tvecMat, cameraMatrixMat, distMat, resultPoints);
+			//Debug.Log(resultPoints);
 
-            // 根据旋转矩阵求解坐标旋转角
-            double theta_x = Mathf.Atan2((float)rvecMat.At<double>(2, 1), (float)rvecMat.At<double>(2, 2));
-            double theta_y = Mathf.Atan2((float)(-rvecMat.At<double>(2, 0)),
-                 (Mathf.Sqrt((float)(rvecMat.At<double>(2, 1) * rvecMat.At<double>(2, 1) + (float)rvecMat.At<double>(2, 2) * rvecMat.At<double>(2, 2)))));
-            double theta_z = Mathf.Atan2((float)rvecMat.At<double>(1, 0), (float)rvecMat.At<double>(0, 0));
+			// 根据旋转矩阵求解坐标旋转角
+			double theta_x = Mathf.Atan2((float)rvecMat.At<double>(2, 1), (float)rvecMat.At<double>(2, 2));
+			double theta_y = Mathf.Atan2((float)(-rvecMat.At<double>(2, 0)),
+				 (Mathf.Sqrt((float)(rvecMat.At<double>(2, 1) * rvecMat.At<double>(2, 1) + (float)rvecMat.At<double>(2, 2) * rvecMat.At<double>(2, 2)))));
+			double theta_z = Mathf.Atan2((float)rvecMat.At<double>(1, 0), (float)rvecMat.At<double>(0, 0));
 
-            // 将弧度转为角度
-            this.angles.roll = theta_x * (180 / Mathf.PI);
-            this.angles.pitch = theta_y * (180 / Mathf.PI);
-            this.angles.yaw = theta_z * (180 / Mathf.PI);
+			// 将弧度转为角度
+			this.angles.roll = theta_x * (180 / Mathf.PI);
+			this.angles.pitch = theta_y * (180 / Mathf.PI);
+			this.angles.yaw = theta_z * (180 / Mathf.PI);
 
-            // 将映射的点的坐标保存下来
-            // outarray类型的resultpoints如何转存到list中？
-            return resultPoints;
-        }
+			// 将映射的点的坐标保存下来
+			// outarray类型的resultpoints如何转存到list中？
+			return resultPoints;
+		}
     }
 
    
